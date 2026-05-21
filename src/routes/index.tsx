@@ -1,352 +1,233 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useRef, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { motion } from "framer-motion";
+import { ArrowRight, Clock, Heart, Sparkles, TrendingUp } from "lucide-react";
+import { Aurora, Nav } from "@/components/timeworth/Shell";
+import { Counter } from "@/components/timeworth/Counter";
 
 export const Route = createFileRoute("/")({
-  component: Index,
-  head: () => ({
-    meta: [
-      { title: "Screenshot Cleaner — Remove mobile status bars instantly" },
-      {
-        name: "description",
-        content:
-          "Drop a mobile screenshot, we auto-detect and crop the status bar. Clean image in one click.",
-      },
-    ],
-  }),
+  component: Landing,
 });
 
-type Result = {
-  originalUrl: string;
-  cleanedUrl: string;
-  cleanedBlob: Blob;
-  width: number;
-  height: number;
-  cropped: number;
-};
-
-async function detectAndCrop(file: File): Promise<Result> {
-  const originalUrl = URL.createObjectURL(file);
-  const img = await loadImage(originalUrl);
-  const canvas = document.createElement("canvas");
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(img, 0, 0);
-
-  const cropY = detectStatusBarHeight(ctx, canvas.width, canvas.height);
-
-  const out = document.createElement("canvas");
-  out.width = canvas.width;
-  out.height = canvas.height - cropY;
-  const octx = out.getContext("2d")!;
-  octx.drawImage(canvas, 0, cropY, canvas.width, out.height, 0, 0, canvas.width, out.height);
-
-  const cleanedBlob: Blob = await new Promise((res) =>
-    out.toBlob((b) => res(b!), "image/png"),
-  );
-  const cleanedUrl = URL.createObjectURL(cleanedBlob);
-
-  return {
-    originalUrl,
-    cleanedUrl,
-    cleanedBlob,
-    width: out.width,
-    height: out.height,
-    cropped: cropY,
-  };
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((res, rej) => {
-    const i = new Image();
-    i.onload = () => res(i);
-    i.onerror = rej;
-    i.src = src;
-  });
-}
-
-// Heuristic: scan rows top-down. A status bar row tends to have a stable
-// background with small icon clusters. Find the first row that "looks like
-// content" (high variance across the full width) after the status bar zone.
-function detectStatusBarHeight(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
-): number {
-  // Cap search to top 15% of image
-  const maxScan = Math.min(Math.floor(h * 0.15), 300);
-  const data = ctx.getImageData(0, 0, w, maxScan).data;
-
-  // Sample background color from very top edges
-  const bg = sampleCorner(data, w);
-
-  let lastBgRow = 0;
-  for (let y = 0; y < maxScan; y++) {
-    let bgCount = 0;
-    const step = Math.max(1, Math.floor(w / 40));
-    let samples = 0;
-    for (let x = 0; x < w; x += step) {
-      const i = (y * w + x) * 4;
-      if (colorClose(data[i], data[i + 1], data[i + 2], bg)) bgCount++;
-      samples++;
-    }
-    // Status bar rows: mostly background with a few icon pixels
-    if (bgCount / samples > 0.55) {
-      lastBgRow = y;
-    } else if (y > 10 && lastBgRow > 0) {
-      // Found first dense content row after status bar
-      break;
-    }
-  }
-
-  // Add small padding
-  if (lastBgRow === 0) return 0;
-  return Math.min(lastBgRow + 2, Math.floor(h * 0.15));
-}
-
-function sampleCorner(data: Uint8ClampedArray, w: number) {
-  // Average a few pixels at top-left and top-right
-  const pts = [
-    [2, 2],
-    [w - 3, 2],
-    [10, 5],
-    [w - 11, 5],
-  ];
-  let r = 0,
-    g = 0,
-    b = 0;
-  for (const [x, y] of pts) {
-    const i = (y * w + x) * 4;
-    r += data[i];
-    g += data[i + 1];
-    b += data[i + 2];
-  }
-  return [r / pts.length, g / pts.length, b / pts.length] as const;
-}
-
-function colorClose(r: number, g: number, b: number, bg: readonly [number, number, number]) {
+function Landing() {
   return (
-    Math.abs(r - bg[0]) < 18 && Math.abs(g - bg[1]) < 18 && Math.abs(b - bg[2]) < 18
-  );
-}
+    <div className="relative min-h-screen overflow-hidden">
+      <Aurora />
+      <Nav />
 
-function Index() {
-  const [result, setResult] = useState<Result | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleFile = useCallback(async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setError("Please upload an image file.");
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    try {
-      const r = await detectAndCrop(file);
-      setResult(r);
-    } catch {
-      setError("Couldn't process that image.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const onDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f) handleFile(f);
-  };
-
-  const download = () => {
-    if (!result) return;
-    const a = document.createElement("a");
-    a.href = result.cleanedUrl;
-    a.download = "cleaned.png";
-    a.click();
-  };
-
-  const reset = () => {
-    if (result) {
-      URL.revokeObjectURL(result.originalUrl);
-      URL.revokeObjectURL(result.cleanedUrl);
-    }
-    setResult(null);
-    setError(null);
-  };
-
-  return (
-    <main className="min-h-screen bg-white text-neutral-900">
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-md bg-neutral-900" />
-          <span className="text-sm font-semibold tracking-tight">Screenshot Cleaner</span>
-        </div>
-        <a
-          href="https://github.com"
-          className="text-xs text-neutral-500 hover:text-neutral-900"
+      {/* Hero */}
+      <section className="mx-auto max-w-5xl px-5 pt-16 pb-24 text-center sm:pt-24">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="glass mx-auto mb-6 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs text-muted-foreground"
         >
-          v1.0
-        </a>
-      </header>
+          <Sparkles className="h-3.5 w-3.5" /> Emotional finance, reimagined
+        </motion.div>
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.05 }}
+          className="font-display text-5xl leading-[1.05] text-balance sm:text-7xl md:text-8xl"
+        >
+          What does this <em className="text-accent">really</em>
+          <br /> cost you?
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15 }}
+          className="mx-auto mt-6 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg"
+        >
+          TimeWorth translates every price into the hours, days and weeks of your life it
+          quietly takes away. Spend with clarity.
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-10 flex flex-wrap items-center justify-center gap-3"
+        >
+          <Link
+            to="/onboarding"
+            className="group inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3.5 text-sm font-medium text-background transition hover:scale-[1.02]"
+          >
+            Begin your story
+            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+          </Link>
+          <a
+            href="#how"
+            className="glass inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-medium"
+          >
+            How it works
+          </a>
+        </motion.div>
 
-      <section className="mx-auto max-w-3xl px-6 pt-8 pb-16 text-center">
-        <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-          Remove mobile status bars.
-          <br />
-          <span className="text-neutral-400">Instantly.</span>
-        </h1>
-        <p className="mx-auto mt-4 max-w-lg text-pretty text-base text-neutral-500">
-          Drop a screenshot. We detect the status bar and crop it out. Download the clean image.
-        </p>
+        {/* Demo card */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.45 }}
+          className="glass mx-auto mt-16 max-w-md rounded-3xl p-6 text-left shadow-2xl shadow-black/5"
+        >
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">A new iPhone</p>
+          <p className="mt-1 font-display text-3xl">₹1,29,900</p>
+          <div className="mt-5 rounded-2xl bg-foreground/[0.04] p-5 dark:bg-foreground/[0.06]">
+            <p className="font-display text-4xl text-balance sm:text-5xl">
+              <Counter value={21.4} decimals={1} suffix=" days" />
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">of your life. Is it still worth it?</p>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+            <Mini label="Hours" value={171} />
+            <Mini label="Weeks" value={4.3} decimals={1} />
+            <Mini label="Of salary" value={86} suffix="%" />
+          </div>
+        </motion.div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-6 pb-24">
-        {!result && (
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragging(true);
-            }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={onDrop}
-            onClick={() => inputRef.current?.click()}
-            className={[
-              "group relative flex min-h-[320px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-neutral-50 px-6 py-16 transition-all",
-              dragging
-                ? "border-neutral-900 bg-neutral-100 scale-[1.005]"
-                : "border-neutral-200 hover:border-neutral-400 hover:bg-neutral-100",
-            ].join(" ")}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFile(f);
-              }}
-            />
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-neutral-200">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 3v12" />
-                <path d="m7 8 5-5 5 5" />
-                <path d="M5 21h14" />
-              </svg>
-            </div>
-            <p className="text-base font-medium">
-              {loading ? "Processing…" : "Drop your screenshot here"}
-            </p>
-            <p className="mt-1 text-sm text-neutral-500">
-              or click to browse — PNG, JPG, WEBP
-            </p>
-            {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
-          </div>
-        )}
+      {/* How */}
+      <section id="how" className="mx-auto max-w-6xl px-5 py-20">
+        <h2 className="font-display text-4xl text-balance sm:text-5xl">How it works</h2>
+        <p className="mt-3 max-w-xl text-muted-foreground">
+          Three quiet steps. Then every price you see has a second number underneath it.
+        </p>
+        <div className="mt-12 grid gap-5 sm:grid-cols-3">
+          {[
+            { n: "01", t: "Tell us about you", d: "Salary, working hours and days. Stored only on your device." },
+            { n: "02", t: "Enter any price", d: "A coffee. A car. A subscription. Anything that has a number." },
+            { n: "03", t: "See the truth", d: "Hours, days and weeks of your life — visualized beautifully." },
+          ].map((s, i) => (
+            <motion.div
+              key={s.n}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.6, delay: i * 0.1 }}
+              className="glass rounded-3xl p-7"
+            >
+              <p className="font-display text-2xl text-accent">{s.n}</p>
+              <h3 className="mt-3 text-lg font-semibold">{s.t}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{s.d}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
 
-        {result && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <Preview label="Before" url={result.originalUrl} />
-              <Preview label="After" url={result.cleanedUrl} highlight />
-            </div>
-            <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-neutral-50 px-5 py-4 sm:flex-row">
-              <p className="text-sm text-neutral-600">
-                Cropped <span className="font-medium text-neutral-900">{result.cropped}px</span> from
-                top · Output {result.width}×{result.height}
+      {/* Emotional demo */}
+      <section className="mx-auto max-w-6xl px-5 py-20">
+        <div className="glass overflow-hidden rounded-[2rem] p-8 sm:p-14">
+          <div className="grid gap-10 md:grid-cols-2 md:items-center">
+            <div>
+              <h2 className="font-display text-4xl text-balance sm:text-5xl">
+                Money is just time, <em className="text-accent">borrowed forward.</em>
+              </h2>
+              <p className="mt-5 max-w-md text-muted-foreground">
+                Every rupee you spend was paid for in minutes of your life. We make that
+                trade visible — gently, beautifully, honestly.
               </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={reset}
-                  className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50"
-                >
-                  New image
-                </button>
-                <button
-                  onClick={download}
-                  className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700"
-                >
-                  Download PNG
-                </button>
+              <div className="mt-8 grid grid-cols-2 gap-4 text-sm">
+                <Stat icon={<Clock className="h-4 w-4" />} t="Avg. time saved" v="3.2 hrs / wk" />
+                <Stat icon={<Heart className="h-4 w-4" />} t="Mindful purchases" v="+47%" />
+                <Stat icon={<TrendingUp className="h-4 w-4" />} t="Saved in 6 months" v="₹42,000" />
+                <Stat icon={<Sparkles className="h-4 w-4" />} t="Users sleeping better" v="91%" />
+              </div>
+            </div>
+            <div className="relative">
+              <div className="glass rounded-3xl p-6">
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                  A weekend trip
+                </p>
+                <p className="mt-1 font-display text-3xl">₹35,000</p>
+                <p className="mt-4 font-display text-4xl text-balance sm:text-5xl">
+                  <Counter value={5.8} decimals={1} suffix=" days" />
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  That's nearly a full work week, traded for one weekend of memories. Worth it.
+                </p>
+              </div>
+              <div className="glass absolute -bottom-6 -right-4 hidden rounded-2xl p-4 sm:block">
+                <p className="text-xs text-muted-foreground">If invested at 12%</p>
+                <p className="font-display text-2xl">₹1,08,724 in 10y</p>
               </div>
             </div>
           </div>
-        )}
-
-        <div className="mt-16 grid grid-cols-1 gap-8 text-sm sm:grid-cols-3">
-          <Feature
-            title="Auto detection"
-            desc="Scans the top edge of your image and finds where the status bar ends."
-          />
-          <Feature
-            title="Runs locally"
-            desc="Everything happens in your browser. Your screenshots never leave your device."
-          />
-          <Feature
-            title="Mobile friendly"
-            desc="Works just as well on your phone — paste a screenshot and clean it on the go."
-          />
         </div>
       </section>
 
-      <footer className="border-t border-neutral-100 py-8 text-center text-xs text-neutral-400">
-        Built for clean screenshots.
+      {/* Testimonials */}
+      <section className="mx-auto max-w-6xl px-5 py-20">
+        <h2 className="font-display text-4xl text-balance sm:text-5xl">Loved by mindful spenders</h2>
+        <div className="mt-12 grid gap-5 md:grid-cols-3">
+          {TESTIMONIALS.map((t, i) => (
+            <motion.figure
+              key={t.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.6, delay: i * 0.08 }}
+              className="glass rounded-3xl p-7"
+            >
+              <blockquote className="font-display text-xl leading-snug text-balance">
+                "{t.quote}"
+              </blockquote>
+              <figcaption className="mt-6 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/10 font-semibold">
+                  {t.name[0]}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">{t.role}</p>
+                </div>
+              </figcaption>
+            </motion.figure>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="mx-auto max-w-4xl px-5 py-24 text-center">
+        <h2 className="font-display text-5xl text-balance sm:text-6xl">
+          Your time is the only currency that matters.
+        </h2>
+        <p className="mt-5 text-muted-foreground">Start measuring it.</p>
+        <Link
+          to="/onboarding"
+          className="mt-8 inline-flex items-center gap-2 rounded-full bg-foreground px-7 py-4 text-sm font-medium text-background transition hover:scale-[1.02]"
+        >
+          Begin your story <ArrowRight className="h-4 w-4" />
+        </Link>
+      </section>
+
+      <footer className="border-t border-border/60 py-10 text-center text-xs text-muted-foreground">
+        TimeWorth · Made with care for your hours
       </footer>
-    </main>
-  );
-}
-
-function Preview({
-  label,
-  url,
-  highlight,
-}: {
-  label: string;
-  url: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wider text-neutral-500">
-          {label}
-        </span>
-        {highlight && (
-          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-emerald-600">
-            Cleaned
-          </span>
-        )}
-      </div>
-      <div
-        className={[
-          "overflow-hidden rounded-xl border bg-neutral-50",
-          highlight ? "border-neutral-300" : "border-neutral-200",
-        ].join(" ")}
-      >
-        <img src={url} alt={label} className="h-auto w-full object-contain" />
-      </div>
     </div>
   );
 }
 
-function Feature({ title, desc }: { title: string; desc: string }) {
+function Mini({ label, value, decimals, suffix }: { label: string; value: number; decimals?: number; suffix?: string }) {
   return (
-    <div>
-      <h3 className="font-medium text-neutral-900">{title}</h3>
-      <p className="mt-1 text-neutral-500">{desc}</p>
+    <div className="rounded-xl bg-foreground/[0.04] py-3 dark:bg-foreground/[0.06]">
+      <p className="font-display text-xl">
+        <Counter value={value} decimals={decimals ?? 0} suffix={suffix ?? ""} />
+      </p>
+      <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
     </div>
   );
 }
+
+function Stat({ icon, t, v }: { icon: React.ReactNode; t: string; v: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-background/40 p-4">
+      <div className="flex items-center gap-2 text-muted-foreground">{icon}<span className="text-xs">{t}</span></div>
+      <p className="mt-1 font-display text-xl">{v}</p>
+    </div>
+  );
+}
+
+const TESTIMONIALS = [
+  { name: "Ananya R.", role: "Product designer, Bengaluru", quote: "I stopped buying things that cost me a week of my life. Quietly life-changing." },
+  { name: "Marcus T.", role: "Engineer, Berlin", quote: "Saw a €900 jacket as 31 hours of code reviews. Closed the tab." },
+  { name: "Priya N.", role: "Doctor, Mumbai", quote: "Finally, finance that speaks to my heart and not my spreadsheet." },
+];
