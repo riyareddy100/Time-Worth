@@ -1,8 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Aurora, Nav } from "@/components/timeworth/Shell";
+import { Nav, SoftGradient } from "@/components/timeworth/Shell";
 import { CURRENCIES, loadProfile, saveProfile, type Profile } from "@/lib/timeworth";
 
 export const Route = createFileRoute("/onboarding")({
@@ -10,12 +9,12 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 const STEPS = [
-  { key: "name", label: "What should we call you?", placeholder: "Your name", type: "text" },
-  { key: "age", label: "How old are you?", placeholder: "27", type: "number", min: 10, max: 100 },
-  { key: "salary", label: "Your monthly salary, after deductions", placeholder: "75000", type: "number", min: 1 },
-  { key: "hoursPerDay", label: "Hours you work each day", placeholder: "8", type: "number", min: 1, max: 24 },
-  { key: "daysPerWeek", label: "Working days per week", placeholder: "5", type: "number", min: 1, max: 7 },
-  { key: "currency", label: "Your currency", placeholder: "INR", type: "select" },
+  { key: "name", label: "What should we call you?", placeholder: "your name", type: "text" },
+  { key: "age", label: "How old are you?", placeholder: "27", type: "number" },
+  { key: "salary", label: "What do you earn each month?", placeholder: "75000", type: "number" },
+  { key: "hoursPerDay", label: "How many hours a day do you work?", placeholder: "8", type: "number" },
+  { key: "daysPerWeek", label: "How many days a week?", placeholder: "5", type: "number" },
+  { key: "currency", label: "And your currency?", placeholder: "", type: "select" },
 ] as const;
 
 function Onboarding() {
@@ -58,53 +57,42 @@ function Onboarding() {
   const back = () => step > 0 && setStep(step - 1);
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <Aurora />
+    <div className="relative flex min-h-screen flex-col">
+      <SoftGradient />
       <Nav />
-      <main className="mx-auto flex max-w-xl flex-col px-5 pt-10 pb-20">
-        {/* Progress */}
-        <div className="mb-10 flex gap-1.5">
-          {STEPS.map((_, i) => (
-            <div key={i} className="h-1 flex-1 overflow-hidden rounded-full bg-foreground/10">
-              <motion.div
-                initial={false}
-                animate={{ width: i < step ? "100%" : i === step ? "60%" : "0%" }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="h-full bg-foreground"
-              />
-            </div>
-          ))}
-        </div>
 
-        <p className="mb-3 text-xs uppercase tracking-widest text-muted-foreground">
-          Step {step + 1} of {STEPS.length}
+      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-6 py-24">
+        <p className="mb-16 text-center text-[11px] tracking-[0.25em] text-muted-foreground/70 uppercase">
+          {step + 1} / {STEPS.length}
         </p>
 
         <AnimatePresence mode="wait">
           <motion.div
             key={current.key}
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -14 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="text-center"
           >
-            <h1 className="font-display text-4xl text-balance sm:text-5xl">{current.label}</h1>
+            <h1 className="font-display text-3xl text-balance sm:text-4xl">
+              {current.label}
+            </h1>
 
-            <div className="mt-10">
+            <div className="mt-16">
               {current.type === "select" ? (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-wrap justify-center gap-2">
                   {CURRENCIES.map((c) => (
                     <button
                       key={c.code}
                       onClick={() => setField(c.code)}
-                      className={`glass flex items-center justify-center gap-2 rounded-2xl px-3 py-4 text-sm transition ${
+                      className={`rounded-full border px-5 py-2.5 text-sm transition ${
                         data.currency === c.code
-                          ? "ring-2 ring-accent"
-                          : "hover:scale-[1.02]"
+                          ? "border-foreground text-foreground"
+                          : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
                       }`}
                     >
-                      <span className="text-base">{c.symbol}</span>
-                      <span className="text-muted-foreground">{c.code}</span>
+                      {c.symbol} {c.code}
                     </button>
                   ))}
                 </div>
@@ -117,31 +105,28 @@ function Onboarding() {
                   onChange={(e) => setField(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && next()}
                   placeholder={current.placeholder}
-                  className="w-full border-b-2 border-foreground/15 bg-transparent pb-3 font-display text-5xl placeholder:text-foreground/20 focus:border-accent focus:outline-none sm:text-6xl"
+                  className="font-display w-full bg-transparent pb-3 text-center text-4xl placeholder:text-foreground/15 focus:outline-none sm:text-5xl"
                 />
               )}
             </div>
           </motion.div>
         </AnimatePresence>
 
-        <div className="mt-14 flex items-center justify-between">
-          <button
-            onClick={back}
-            disabled={step === 0}
-            className="glass flex h-12 w-12 items-center justify-center rounded-full disabled:opacity-30"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
+        <div className="mt-20 flex items-center justify-center gap-8 text-sm tracking-wider uppercase">
+          {step > 0 && (
+            <button
+              onClick={back}
+              className="text-muted-foreground transition hover:text-foreground"
+            >
+              back
+            </button>
+          )}
           <button
             onClick={next}
             disabled={!valid}
-            className="inline-flex items-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-sm font-medium text-background transition hover:scale-[1.02] disabled:opacity-30 disabled:hover:scale-100"
+            className="border-b border-foreground/30 pb-1 text-foreground/80 transition hover:border-foreground hover:text-foreground disabled:cursor-not-allowed disabled:border-transparent disabled:text-foreground/20"
           >
-            {step === STEPS.length - 1 ? (
-              <>Complete <Check className="h-4 w-4" /></>
-            ) : (
-              <>Continue <ArrowRight className="h-4 w-4" /></>
-            )}
+            {step === STEPS.length - 1 ? "begin" : "continue"}
           </button>
         </div>
       </main>
