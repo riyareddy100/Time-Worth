@@ -1,11 +1,12 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Moon, Sun, Clock3 } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function useTheme() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   useEffect(() => {
-    const saved = (localStorage.getItem("timeworth.theme") as "light" | "dark" | null) ??
+    const saved =
+      (localStorage.getItem("timeworth.theme") as "light" | "dark" | null) ??
       (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     setTheme(saved);
     document.documentElement.classList.toggle("dark", saved === "dark");
@@ -24,38 +25,35 @@ export function Nav() {
   const router = useRouter();
   const path = router.state.location.pathname;
   return (
-    <header className="sticky top-0 z-40">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-foreground text-background">
-            <Clock3 className="h-4 w-4" />
-          </div>
-          <span className="font-display text-xl">TimeWorth</span>
+    <header className="absolute top-0 right-0 left-0 z-40">
+      <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
+        <Link
+          to={path === "/" ? "/" : "/dashboard"}
+          className="font-display text-lg tracking-tight text-foreground/70 transition hover:text-foreground"
+        >
+          timeworth
         </Link>
-        <div className="flex items-center gap-2">
-          {path !== "/" && (
-            <Link
-              to="/dashboard"
-              className="hidden rounded-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground sm:inline-flex"
-            >
-              Dashboard
-            </Link>
-          )}
-          <button
-            onClick={toggle}
-            aria-label="Toggle theme"
-            className="glass flex h-9 w-9 items-center justify-center rounded-full text-foreground transition hover:scale-105"
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
-        </div>
+        <button
+          onClick={toggle}
+          aria-label="Toggle theme"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-foreground/50 transition hover:text-foreground"
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
       </div>
     </header>
   );
 }
 
-export function Aurora() {
+export function SoftGradient() {
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10 bg-aurora opacity-80" aria-hidden />
+    <div
+      className="pointer-events-none fixed inset-0 -z-10 opacity-60"
+      aria-hidden
+      style={{
+        backgroundImage:
+          "radial-gradient(60% 50% at 50% 0%, oklch(0.92 0.04 50 / 0.5), transparent 70%), radial-gradient(50% 60% at 50% 100%, oklch(0.9 0.04 250 / 0.35), transparent 70%)",
+      }}
+    />
   );
 }
