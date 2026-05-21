@@ -1,6 +1,4 @@
 export type Profile = {
-  name: string;
-  age: number;
   salary: number;
   hoursPerDay: number;
   daysPerWeek: number;
@@ -34,10 +32,6 @@ export type Calc = {
   daysNeeded: number;
   weeksNeeded: number;
   monthsNeeded: number;
-  percentOfMonthly: number;
-  meals: number;
-  coffees: number;
-  futureValue10y: number;
 };
 
 export function calculate(profile: Profile, price: number): Calc {
@@ -47,29 +41,7 @@ export function calculate(profile: Profile, price: number): Calc {
   const daysNeeded = hoursNeeded / profile.hoursPerDay;
   const weeksNeeded = daysNeeded / profile.daysPerWeek;
   const monthsNeeded = price / profile.salary;
-  const percentOfMonthly = (price / profile.salary) * 100;
-  const meals = price / 8;
-  const coffees = price / 4;
-  // FV of lump sum @ 12% for 10 years
-  const futureValue10y = price * Math.pow(1.12, 10);
-  return {
-    monthlyHours,
-    hourlyEarnings,
-    hoursNeeded,
-    daysNeeded,
-    weeksNeeded,
-    monthsNeeded,
-    percentOfMonthly,
-    meals,
-    coffees,
-    futureValue10y,
-  };
-}
-
-export function greeting(name: string) {
-  const h = new Date().getHours();
-  const g = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : h < 22 ? "Good evening" : "Good night";
-  return `${g}, ${name}`;
+  return { monthlyHours, hourlyEarnings, hoursNeeded, daysNeeded, weeksNeeded, monthsNeeded };
 }
 
 export const CURRENCIES = [
