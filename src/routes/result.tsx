@@ -108,14 +108,14 @@ function Result() {
             <span className="font-display mr-2 text-base tracking-normal text-foreground normal-case">
               {format(calc.daysNeeded)}
             </span>
-            days
+            working days
           </span>
           <span className="text-foreground/15">·</span>
           <span>
             <span className="font-display mr-2 text-base tracking-normal text-foreground normal-case">
               {format(calc.hoursNeeded)}
             </span>
-            hours
+            working hours
           </span>
         </motion.div>
 
