@@ -101,6 +101,27 @@ function Result() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1.7 }}
+          className="mt-12 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-[11px] tracking-[0.3em] text-muted-foreground/80 uppercase"
+        >
+          <span>
+            <span className="font-display mr-2 text-base tracking-normal text-foreground normal-case">
+              {format(calc.daysNeeded)}
+            </span>
+            days
+          </span>
+          <span className="text-foreground/15">·</span>
+          <span>
+            <span className="font-display mr-2 text-base tracking-normal text-foreground normal-case">
+              {format(calc.hoursNeeded)}
+            </span>
+            hours
+          </span>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1.9 }}
           className="mt-24 flex flex-wrap items-center justify-center gap-8 text-sm tracking-wider uppercase"
         >

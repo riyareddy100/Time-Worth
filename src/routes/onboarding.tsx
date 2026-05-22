@@ -16,14 +16,14 @@ type Form = {
 
 function Onboarding() {
   const navigate = useNavigate();
-  const [form, setForm] = useState<Form>({ salary: "", hoursPerDay: "8", daysPerWeek: "5" });
+  const [form, setForm] = useState<Form>({ salary: "", hoursPerDay: "9", daysPerWeek: "5" });
 
   useEffect(() => {
     const p = loadProfile();
     if (p) {
       setForm({
         salary: String(p.salary ?? ""),
-        hoursPerDay: String(p.hoursPerDay ?? 8),
+        hoursPerDay: String(p.hoursPerDay ?? 9),
         daysPerWeek: String(p.daysPerWeek ?? 5),
       });
     }
@@ -82,7 +82,7 @@ function Onboarding() {
             label="Working hours / day"
             value={form.hoursPerDay}
             onChange={update("hoursPerDay")}
-            placeholder="8"
+            placeholder="9"
           />
           <Field
             label="Working days / week"
@@ -96,9 +96,9 @@ function Onboarding() {
           <button
             onClick={submit}
             disabled={!valid}
-            className="border-b border-foreground/30 pb-1 text-sm tracking-wider text-foreground/80 uppercase transition hover:border-foreground hover:text-foreground disabled:cursor-not-allowed disabled:border-transparent disabled:text-foreground/20"
+            className="rounded-full bg-foreground px-10 py-3.5 text-xs tracking-[0.25em] text-background uppercase shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
           >
-            begin
+            next
           </button>
         </div>
       </main>
@@ -130,6 +130,7 @@ function Field({
         inputMode="decimal"
         value={value}
         onChange={onChange}
+        onWheel={(e) => (e.target as HTMLInputElement).blur()}
         placeholder={placeholder}
         className="font-display mt-4 w-full border-b border-foreground/10 bg-transparent pb-2 text-center text-3xl placeholder:text-foreground/15 focus:border-foreground/40 focus:outline-none sm:text-4xl"
       />
