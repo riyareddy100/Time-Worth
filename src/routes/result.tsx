@@ -113,8 +113,21 @@ function Result() {
   );
 }
 
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <span className="font-display text-7xl leading-none tracking-tight sm:text-8xl">
+        {value}
+      </span>
+      <span className="text-[11px] tracking-[0.3em] text-muted-foreground/80 uppercase">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 function pickUnit(hours: number, days: number, weeks: number, months: number) {
-  if (months >= 2) return { value: format(months), unit: months < 2 ? "month" : "months" };
+  if (months >= 2) return { value: format(months), unit: "months" };
   if (weeks >= 2) return { value: format(weeks), unit: "weeks" };
   if (days >= 1) return { value: format(days), unit: days < 2 ? "day" : "days" };
   return { value: format(hours), unit: hours < 2 ? "hour" : "hours" };
