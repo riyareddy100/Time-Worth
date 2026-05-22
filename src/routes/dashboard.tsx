@@ -65,6 +65,7 @@ function Dashboard() {
               inputMode="decimal"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               onKeyDown={(e) => e.key === "Enter" && calc()}
               placeholder="0"
               className="font-display w-full max-w-xs bg-transparent text-center text-5xl placeholder:text-foreground/15 focus:outline-none sm:text-6xl"
@@ -75,7 +76,7 @@ function Dashboard() {
             <button
               onClick={calc}
               disabled={!price || Number(price) <= 0}
-              className="border-b border-foreground/30 pb-1 text-sm tracking-wider text-foreground/80 uppercase transition hover:border-foreground hover:text-foreground disabled:cursor-not-allowed disabled:border-transparent disabled:text-foreground/20"
+              className="rounded-full bg-foreground px-10 py-3.5 text-xs tracking-[0.25em] text-background uppercase shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
             >
               see what it costs
             </button>
