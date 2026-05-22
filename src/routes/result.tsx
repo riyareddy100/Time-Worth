@@ -75,10 +75,9 @@ function Result() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-16 grid w-full grid-cols-1 gap-10 sm:grid-cols-2 sm:gap-16"
+          className="mt-16 grid w-full max-w-2xl grid-cols-1 gap-12 sm:grid-cols-2 sm:gap-8"
         >
           <Stat value={format(calc.daysNeeded)} label="working days" />
-          <div className="hidden sm:block sm:absolute" aria-hidden />
           <Stat value={format(calc.hoursNeeded)} label="working hours" />
         </motion.div>
 
