@@ -71,53 +71,24 @@ function Result() {
           {priceLabel}
         </motion.p>
 
-        <motion.h1
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.4, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="font-display mt-10 text-[22vw] leading-[0.9] tracking-tight text-balance sm:text-[16rem]"
+          transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-16 grid w-full max-w-2xl grid-cols-1 gap-12 sm:grid-cols-2 sm:gap-8"
         >
-          {value}
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.9 }}
-          className="font-display mt-2 text-2xl tracking-[0.4em] uppercase sm:text-3xl"
-        >
-          {unit}
-        </motion.p>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1.4 }}
-          className="mt-10 text-sm text-muted-foreground"
-        >
-          of your life.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1.7 }}
-          className="mt-12 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-[11px] tracking-[0.3em] text-muted-foreground/80 uppercase"
-        >
-          <span>
-            <span className="font-display mr-2 text-base tracking-normal text-foreground normal-case">
-              {format(calc.daysNeeded)}
-            </span>
-            days
-          </span>
-          <span className="text-foreground/15">·</span>
-          <span>
-            <span className="font-display mr-2 text-base tracking-normal text-foreground normal-case">
-              {format(calc.hoursNeeded)}
-            </span>
-            hours
-          </span>
+          <Stat value={format(calc.daysNeeded)} label="working days" />
+          <Stat value={format(calc.hoursNeeded)} label="working hours" />
         </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1.1 }}
+          className="mt-16 max-w-sm text-sm leading-relaxed text-muted-foreground"
+        >
+          That's how much of your work you'd trade for it.
+        </motion.p>
 
         <motion.div
           initial={{ opacity: 0 }}
@@ -141,8 +112,21 @@ function Result() {
   );
 }
 
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <span className="font-display text-7xl leading-none tracking-tight sm:text-8xl">
+        {value}
+      </span>
+      <span className="text-[11px] tracking-[0.3em] text-muted-foreground/80 uppercase">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 function pickUnit(hours: number, days: number, weeks: number, months: number) {
-  if (months >= 2) return { value: format(months), unit: months < 2 ? "month" : "months" };
+  if (months >= 2) return { value: format(months), unit: "months" };
   if (weeks >= 2) return { value: format(weeks), unit: "weeks" };
   if (days >= 1) return { value: format(days), unit: days < 2 ? "day" : "days" };
   return { value: format(hours), unit: hours < 2 ? "hour" : "hours" };
